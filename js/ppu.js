@@ -95,6 +95,7 @@ class PPU {
     }
 
     step() {
+        console.log(`Scanline: ${this.scanline}, Cycle: ${this.cycle}`);
         this.cycle++;
         if (this.cycle > 340) {
             this.cycle = 0;
@@ -120,6 +121,7 @@ class PPU {
     }
 
     renderFrame() {
+        console.log("Rendering frame");
         const baseNametableAddress = 0x2000; // For now, always use the first nametable
 
         for (let y = 0; y < 240; y++) {
