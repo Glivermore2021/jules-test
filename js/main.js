@@ -30,44 +30,48 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-async function loadTestRom() {
-    const response = await fetch('https://raw.githubusercontent.com/christopherpow/nes-test-roms/master/instr_test-v5/rom_singles/all_instrs.nes');
-    const romData = new Uint8Array(await response.arrayBuffer());
-    const cartridge = new Cartridge(romData);
+romLoader.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const romData = new Uint8Array(e.target.result);
+            const cartridge = new Cartridge(romData);
 
-    console.log('ROM loaded: all_instrs.nes');
-    console.log('PRG ROM size:', cartridge.prgRomSize, 'x 16KB');
-    console.log('CHR ROM size:', cartridge.chrRomSize, 'x 8KB');
-    console.log('Mapper:', cartridge.mapper);
-    console.log('Mirroring:', cartridge.mirroring === 0 ? 'Horizontal' : 'Vertical');
+            console.log('ROM loaded:', file.name);
+            console.log('PRG ROM size:', cartridge.prgRomSize, 'x 16KB');
+            console.log('CHR ROM size:', cartridge.chrRomSize, 'x 8KB');
+            console.log('Mapper:', cartridge.mapper);
+            console.log('Mirroring:', cartridge.mirroring === 0 ? 'Horizontal' : 'Vertical');
 
-    // Load PRG ROM
-    if (cartridge.prgRomSize === 1) {
-        // NROM-128, mirror PRG ROM at $C000
-        for (let i = 0; i < cartridge.prgRom.length; i++) {
-            cpu.write(0x8000 + i, cartridge.prgRom[i]);
-            cpu.write(0xC000 + i, cartridge.prgRom[i]);
-        }
-    } else {
-        // NROM-256
-        for (let i = 0; i < cartridge.prgRom.length; i++) {
-            cpu.write(0x8000 + i, cartridge.prgRom[i]);
-        }
+            // Load PRG ROM
+            if (cartridge.prgRomSize === 1) {
+                // NROM-128, mirror PRG ROM at $C000
+                for (let i = 0; i < cartridge.prgRom.length; i++) {
+                    cpu.write(0x8000 + i, cartridge.prgRom[i]);
+                    cpu.write(0xC000 + i, cartridge.prgRom[i]);
+                }
+            } else {
+                // NROM-256
+                for (let i = 0; i < cartridge.prgRom.length; i++) {
+                    cpu.write(0x8000 + i, cartridge.prgRom[i]);
+                }
+            }
+
+            // Load CHR ROM
+            if (cartridge.chrRom) {
+                for (let i = 0; i < cartridge.chrRom.length; i++) {
+                    ppu.write(i, cartridge.chrRom[i]);
+                }
+            }
+
+            // Set the reset vector
+            cpu.reset();
+            main();
+        };
+        reader.readAsArrayBuffer(file);
     }
-
-    // Load CHR ROM
-    if (cartridge.chrRom) {
-        for (let i = 0; i < cartridge.chrRom.length; i++) {
-            ppu.write(i, cartridge.chrRom[i]);
-        }
-    }
-
-    // Set the reset vector
-    cpu.reset();
-    main();
-}
-
-loadTestRom();
+});
 
 function main() {
     console.log('Emulator started');
